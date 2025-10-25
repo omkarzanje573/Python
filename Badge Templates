@@ -1,0 +1,55 @@
+import sys
+import io
+from flask import Flask, request, render_template_string, send_file
+from PIL import Image, ImageDraw, ImageFont
+
+app = Flask(__name__)
+
+# --- Badge Templates -------------------------------------------------
+TEMPLATES = {
+    "classic": [
+        "############################",
+        "#   HACKTOBERFEST 2025     #",
+        "#   {name:<18}#",
+        "############################",
+    ],
+    "star": [
+        "  ******  HACKTOBERFEST ******",
+        " * {name:^22} *",
+        "  ***************************",
+    ],
+    "minimal": [
+        "+----------------------------+",
+        "| HACKTOBERFEST 2025 |",
+        "|   {name:^22} |",
+        "+----------------------------+",
+    ]
+}
+
+# --- Badge Generator -------------------------------------------------
+def make_ascii_badge(name: str, template: str = "classic") -> str:
+    """Create an ASCII badge string with given name."""
+    tpl = TEMPLATES.get(template, TEMPLATES["classic"])
+    return "\n".join([line.format(name=name) if "{name" in line else line for line in tpl])
+
+# --- Convert ASCII to Image ------------------------------------------
+def ascii_to_image(text: str, font_size=16, padding=10):
+    """Render ASCII text as a PNG image using Pillow."""
+    font = ImageFont.load_default()
+    lines = text.splitlines()
+    max_width = max(font.getsize(line)[0] for line in lines)
+    total_height = sum(font.getsize(line)[1] for line in lines)
+    img = Image.new("RGB", (max_width + padding * 2, total_height + padding * 2), "white")
+    draw = ImageDraw.Draw(img)
+    y = padding
+    for line in lines:
+        draw.text((padding, y), line, fill="black", font=font)
+        y += font.getsize(line)[1]
+    bio = io.BytesIO()
+    img.save(bio, "PNG")
+    bio.seek(0)
+    return bio
+
+# --- Flask Web Routes ------------------------------------------------
+@app.route("/", methods=["GET", "POST"])
+def
